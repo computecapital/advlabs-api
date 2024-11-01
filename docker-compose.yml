@@ -1,0 +1,59 @@
+services:
+  dev-api:
+    container_name: advlabs-api-dev
+    restart: always
+    ports:
+      - '${API_PORT}:3000'
+    build:
+      context: .
+      dockerfile: ./build/dev.dockerfile
+    depends_on:
+      - db
+    volumes:
+    - .:/usr/src/app
+    profiles: [dev]
+
+  prod-api:
+    container_name: advlabs-api-prod
+    restart: always
+    ports:
+      - '${API_PORT}:3000'
+    build:
+      context: .
+      dockerfile: ./build/prod.dockerfile
+    depends_on:
+      - db
+    profiles: [prod]
+
+  db:
+    container_name: advlabs-database
+    image: postgres
+    ports:
+      - '${POSTGRES_PORT}:${DB_PORT}'
+    # volumes:
+    #   - data:/data/db
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ${POSTGRES_PATH}/${PROJECT_NAME}/${POSTGRES_DATABASE}/:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prisma-studio:
+    container_name: prisma-studio
+    image: timothyjmiller/prisma-studio:latest
+    restart: unless-stopped
+    env_file:
+     - .env
+    ports:
+      - ${PRISMA_STUDIO_PORT}:5555
+    profiles: [prod]
+    depends_on:
+      - prod-api
+
+volumes:
+  data: {}

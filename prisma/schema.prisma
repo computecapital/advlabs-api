@@ -1,0 +1,59 @@
+generator client {
+    provider      = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id        String   @id @default(uuid())
+    name      String
+    email     String   @unique
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Client {
+    id        String   @id @default(uuid())
+    name      String
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    cases Case[]
+}
+
+model Case {
+    id        String   @id @default(uuid())
+    clientId  String
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    client Client @relation(fields: [clientId], references: [id])
+    files  File[]
+}
+
+model File {
+    id          String   @id @default(uuid())
+    url         String
+    description String
+    caseId      String
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    case          Case            @relation(fields: [caseId], references: [id])
+    ProcessedFile ProcessedFile[]
+}
+
+model ProcessedFile {
+    id          String   @id @default(uuid())
+    url         String
+    description String
+    fileId      String
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    file File @relation(fields: [fileId], references: [id])
+}
