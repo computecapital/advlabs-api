@@ -10,4 +10,4 @@ COPY ./prisma ./prisma
 RUN npm ci
 RUN npm run generate
 
-CMD npm run start:dev
+CMD npm run migrate && npm run start:dev

@@ -5,6 +5,7 @@ import { PrismaService } from 'src/services';
 import { CreateProcessedFileDto } from './dto/create-processed-file.dto';
 import { UpdateProcessedFileDto } from './dto/update-processed-file.dto';
 import { ProcessedFile } from './entities/processed-file.entity';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProcessedFileService {
@@ -16,8 +17,8 @@ export class ProcessedFileService {
     return new ProcessedFile(createdProcessedFile);
   }
 
-  async findAll(): Promise<ProcessedFile[]> {
-    const processedFiles = await this.prisma.processedFile.findMany();
+  async findAll(where?: Prisma.ProcessedFileWhereInput): Promise<ProcessedFile[]> {
+    const processedFiles = await this.prisma.processedFile.findMany({ where });
 
     return processedFiles.map((processedFile) => new ProcessedFile(processedFile));
   }

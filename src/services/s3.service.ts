@@ -16,11 +16,29 @@ export class S3Service {
 
   async uploadFile(file: Express.Multer.File): Promise<S3.ManagedUpload.SendData> {
     const fileName = `${uuidv4()}-${file.originalname}`;
+
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
+    };
+
+    return this.s3.upload(params).promise();
+  }
+
+  async uploadBuffer(
+    buffer: Buffer,
+    originalName: string,
+    mimetype: string,
+  ): Promise<S3.ManagedUpload.SendData> {
+    const fileName = `${uuidv4()}-${originalName}`;
+
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: fileName,
+      Body: buffer,
+      ContentType: mimetype,
     };
 
     return this.s3.upload(params).promise();
@@ -34,5 +52,15 @@ export class S3Service {
     };
 
     return this.s3.getSignedUrl('getObject', params);
+  }
+
+  async getFileContent(key: string): Promise<Buffer> {
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: key,
+    };
+
+    const data = await this.s3.getObject(params).promise();
+    return data.Body as Buffer;
   }
 }
