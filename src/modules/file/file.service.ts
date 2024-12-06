@@ -5,14 +5,12 @@ import { PrismaService, S3Service } from 'src/services';
 import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
-import { ProcessedFileService } from '../processed-file/processed-file.service';
 
 @Injectable()
 export class FileService {
   constructor(
     private readonly s3: S3Service,
     private readonly prisma: PrismaService,
-    private readonly processedFileService: ProcessedFileService,
   ) {}
 
   async create(file: CreateFileDto): Promise<File> {
@@ -22,7 +20,7 @@ export class FileService {
   }
 
   async findAll(): Promise<File[]> {
-    const files = await this.prisma.file.findMany();
+    const files = await this.prisma.file.findMany({ include: { processedFiles: true } });
 
     return files.map((file) => new File(file));
   }

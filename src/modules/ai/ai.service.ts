@@ -36,6 +36,12 @@ export class AIService {
         },
       });
 
+      const createdFile = await this.fileService.create({
+        caseId: caseObj.id,
+        description,
+        url: result.Key,
+      });
+
       const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
         documentUrl,
         context: caseObj.id,
@@ -55,12 +61,6 @@ export class AIService {
       const txtFileName = `processed_text_${uuidv4()}.txt`;
 
       const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
-
-      const createdFile = await this.fileService.create({
-        caseId: caseObj.id,
-        description,
-        url: result.Key,
-      });
 
       await this.processedFileService.create({
         fileId: createdFile.id,
