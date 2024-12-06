@@ -7,6 +7,7 @@ import { PrismaService } from 'src/services';
 import { FileService } from '../file/file.service';
 import { ProcessedFileService } from '../processed-file/processed-file.service';
 import { GenerateSummaryDto } from './dto/generate-summary.dto';
+import { File } from '../file/entities/file.entity';
 
 @Injectable()
 export class AIService {
@@ -18,7 +19,7 @@ export class AIService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async uploadDocument(file: Express.Multer.File, description: string): Promise<void> {
+  async uploadDocument(file: Express.Multer.File, description: string): Promise<File> {
     try {
       const result = await this.s3.uploadFile(file);
 
@@ -42,31 +43,14 @@ export class AIService {
         url: result.Key,
       });
 
-      const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
+      this.readDocument({
         documentUrl,
-        context: caseObj.id,
-      });
-
-      const textData: string[] = response.data.texts;
-
-      let txtContent = '';
-
-      for (let i = 0; i < textData.length; i++) {
-        txtContent += '---PAGE---\n';
-        txtContent += `${textData[i]}\n`;
-      }
-
-      const txtBuffer = Buffer.from(txtContent, 'utf-8');
-
-      const txtFileName = `processed_text_${uuidv4()}.txt`;
-
-      const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
-
-      await this.processedFileService.create({
+        caseId: caseObj.id,
         fileId: createdFile.id,
-        description: `${description}-transcript`,
-        url: txtFileResult.Key,
+        description,
       });
+
+      return createdFile;
     } catch (err) {
       console.log('Upload error:', err);
 
@@ -74,6 +58,37 @@ export class AIService {
         console.log('Axios error response:', err.response.data);
       }
     }
+  }
+
+  async readDocument({
+    documentUrl,
+    caseId,
+    fileId,
+    description,
+  }: {
+    documentUrl: string;
+    caseId: string;
+    fileId: string;
+    description: string;
+  }) {
+    const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
+      documentUrl,
+      context: caseId,
+    });
+
+    const textData: string[] = response.data.texts;
+
+    const txtBuffer = Buffer.from(textData.join('\n'), 'utf-8');
+
+    const txtFileName = `processed_text_${uuidv4()}.txt`;
+
+    const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
+
+    await this.processedFileService.create({
+      fileId,
+      description: `${description}-transcript`,
+      url: txtFileResult.Key,
+    });
   }
 
   async generateSummary(generateSummaryDto: GenerateSummaryDto) {
