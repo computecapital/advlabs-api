@@ -38,7 +38,7 @@ export class AIService {
 
       const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
         documentUrl,
-        context: caseObj,
+        context: caseObj.id,
       });
 
       const textData: string[] = response.data.texts;
