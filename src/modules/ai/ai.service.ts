@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import axios, { AxiosError } from 'axios';
 
 import { S3Service } from 'src/services/s3.service';
+import { PrismaService } from 'src/services';
 import { FileService } from '../file/file.service';
 import { ProcessedFileService } from '../processed-file/processed-file.service';
 import { GenerateSummaryDto } from './dto/generate-summary.dto';
@@ -13,21 +14,31 @@ export class AIService {
     private readonly s3: S3Service,
     private readonly fileService: FileService,
     private readonly processedFileService: ProcessedFileService,
+    // TODO: Create modules and use their services instead
+    private readonly prisma: PrismaService,
   ) {}
 
-  async uploadDocument(
-    file: Express.Multer.File,
-    caseId: string,
-    description: string,
-  ): Promise<void> {
+  async uploadDocument(file: Express.Multer.File, description: string): Promise<void> {
     try {
       const result = await this.s3.uploadFile(file);
 
       const documentUrl = await this.s3.getSignedUrl(result.Key);
 
+      const client = await this.prisma.client.create({
+        data: {
+          name: `Client for file ${description}`,
+        },
+      });
+
+      const caseObj = await this.prisma.case.create({
+        data: {
+          clientId: client.id,
+        },
+      });
+
       const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
         documentUrl,
-        context: caseId,
+        context: caseObj,
       });
 
       const textData: string[] = response.data.texts;
@@ -46,7 +57,7 @@ export class AIService {
       const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
 
       const createdFile = await this.fileService.create({
-        caseId,
+        caseId: caseObj.id,
         description,
         url: result.Key,
       });

@@ -30,10 +30,9 @@ export class AIController {
   })
   async uploadDocument(
     @UploadedFile() file: Express.Multer.File,
-    @Body('caseId') caseId: string,
     @Body('description') description: string,
   ) {
-    await this.aiService.uploadDocument(file, caseId, description);
+    await this.aiService.uploadDocument(file, description);
   }
 
   @Post('/generate-summary')
