@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaService } from 'src/services';
+import { PrismaService, S3Service } from 'src/services';
 
 import { CreateProcessedFileDto } from './dto/create-processed-file.dto';
 import { UpdateProcessedFileDto } from './dto/update-processed-file.dto';
@@ -9,7 +9,10 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProcessedFileService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly s3: S3Service,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async create(processedFile: CreateProcessedFileDto): Promise<ProcessedFile> {
     const createdProcessedFile = await this.prisma.processedFile.create({ data: processedFile });
@@ -21,6 +24,16 @@ export class ProcessedFileService {
     const processedFiles = await this.prisma.processedFile.findMany({ where });
 
     return processedFiles.map((processedFile) => new ProcessedFile(processedFile));
+  }
+
+  async getDownloadURL(id: string): Promise<string> {
+    const foundProcessedFile = await this.prisma.processedFile.findUnique({ where: { id } });
+
+    if (!foundProcessedFile) throw new NotFoundException(`ProcessedFile with id '${id}' not found`);
+
+    const url = await this.s3.getSignedUrl(foundProcessedFile.url);
+
+    return url;
   }
 
   async findOne(id: string): Promise<ProcessedFile> {

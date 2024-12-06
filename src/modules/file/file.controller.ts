@@ -25,6 +25,20 @@ export class FileController {
     return files.map((file) => file.toJSON());
   }
 
+  @Get('download/:id')
+  async download(@Param('id') id: string) {
+    const fileUrl = await this.fileService.getDownloadURL(id);
+
+    return fileUrl;
+  }
+
+  @Get('download-raw/:id')
+  async downloadRaw(@Param('id') id: string) {
+    const fileUrl = await this.fileService.getRawDownloadURL(id);
+
+    return fileUrl;
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const file = await this.fileService.findOne(id);

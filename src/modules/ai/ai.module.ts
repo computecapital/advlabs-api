@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 
+import { PrismaService, S3Service } from 'src/services';
+
 import { AIService } from './ai.service';
 import { AIController } from './ai.controller';
 
-import { S3Service } from 'src/services/s3.service';
 import { FileModule } from '../file/file.module';
 import { ProcessedFileModule } from '../processed-file/processed-file.module';
-import { PrismaService } from 'src/services';
 
 @Module({
   controllers: [AIController],
