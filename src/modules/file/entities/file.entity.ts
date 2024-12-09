@@ -1,4 +1,5 @@
-import { IsDate, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsDate, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ProcessedFile } from 'src/modules/processed-file/entities/processed-file.entity';
 
 type FileProps = {
   id: string;
@@ -7,6 +8,8 @@ type FileProps = {
   caseId: string;
   createdAt: Date;
   updatedAt: Date;
+
+  processedFiles?: ProcessedFile[];
 };
 
 export class File {
@@ -29,6 +32,10 @@ export class File {
   @IsDate()
   updatedAt: Date;
 
+  @IsOptional()
+  @IsArray()
+  processedFiles?: ProcessedFile[];
+
   constructor(props: FileProps) {
     this.id = props.id;
     this.url = props.url;
@@ -36,6 +43,8 @@ export class File {
     this.caseId = props.caseId;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
+
+    this.processedFiles = props.processedFiles;
   }
 
   toJSON() {
@@ -46,6 +55,7 @@ export class File {
       caseId: this.caseId,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      processedFiles: this.processedFiles.map((processedFile) => processedFile.toJSON()),
     };
   }
 }

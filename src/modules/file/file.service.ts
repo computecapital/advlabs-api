@@ -5,6 +5,7 @@ import { PrismaService, S3Service } from 'src/services';
 import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
+import { ProcessedFile } from '../processed-file/entities/processed-file.entity';
 
 @Injectable()
 export class FileService {
@@ -22,7 +23,13 @@ export class FileService {
   async findAll(): Promise<File[]> {
     const files = await this.prisma.file.findMany({ include: { processedFiles: true } });
 
-    return files.map((file) => new File(file));
+    return files.map(({ processedFiles, ...file }) => {
+      const processedFilesEntities = processedFiles.map(
+        (processedFile) => new ProcessedFile(processedFile),
+      );
+
+      return new File({ ...file, processedFiles: processedFilesEntities });
+    });
   }
 
   async getDownloadURL(id: string): Promise<string> {
