@@ -15,6 +15,7 @@ services:
 
   prod-api:
     container_name: advlabs-api-prod
+    network_mode: host
     restart: always
     ports:
       - '${API_PORT}:3000'
@@ -45,6 +46,7 @@ services:
 
   prisma-studio:
     container_name: prisma-studio
+    network_mode: host
     image: timothyjmiller/prisma-studio:latest
     restart: unless-stopped
     env_file:
