@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { AIService } from './ai.service';
-import { GenerateSummaryDto } from './dto/generate-summary.dto';
+import { GenerateReportDto } from './dto/generate-report.dto';
 
 @ApiTags('ai')
 @ApiBearerAuth()
@@ -35,8 +35,8 @@ export class AIController {
     await this.aiService.uploadDocument(file, description);
   }
 
-  @Post('/generate-summary')
-  async generateSummary(@Body() generateSummaryDto: GenerateSummaryDto) {
-    return this.aiService.generateSummary(generateSummaryDto);
+  @Post('/generate-report')
+  async generateReport(@Body() generateReportDto: GenerateReportDto) {
+    return this.aiService.generateReport(generateReportDto);
   }
 }
