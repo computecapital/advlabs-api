@@ -47,13 +47,26 @@ model File {
     processedFiles ProcessedFile[]
 }
 
+enum ProcessedFileType {
+    TRANSCRIPT
+    REPORT
+}
+
+enum ProcessedFileStatus {
+    LOADING
+    ERROR
+    SUCCESS
+}
+
 model ProcessedFile {
-    id          String   @id @default(uuid())
-    url         String
+    id          String              @id @default(uuid())
+    url         String?
+    type        ProcessedFileType   @default(TRANSCRIPT)
+    status      ProcessedFileStatus @default(SUCCESS)
     description String
     fileId      String
-    createdAt   DateTime @default(now()) @map("created_at")
-    updatedAt   DateTime @updatedAt @map("updated_at")
+    createdAt   DateTime            @default(now()) @map("created_at")
+    updatedAt   DateTime            @updatedAt @map("updated_at")
 
     file File @relation(fields: [fileId], references: [id])
 }

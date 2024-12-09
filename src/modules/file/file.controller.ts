@@ -32,13 +32,6 @@ export class FileController {
     return fileUrl;
   }
 
-  @Get('download-raw/:id')
-  async downloadRaw(@Param('id') id: string) {
-    const fileUrl = await this.fileService.getRawDownloadURL(id);
-
-    return fileUrl;
-  }
-
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const file = await this.fileService.findOne(id);

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import axios, { AxiosError } from 'axios';
 
@@ -6,7 +6,7 @@ import { S3Service } from 'src/services/s3.service';
 import { PrismaService } from 'src/services';
 import { FileService } from '../file/file.service';
 import { ProcessedFileService } from '../processed-file/processed-file.service';
-import { GenerateSummaryDto } from './dto/generate-summary.dto';
+import { GenerateReportDto } from './dto/generate-report.dto';
 import { File } from '../file/entities/file.entity';
 
 @Injectable()
@@ -71,42 +71,83 @@ export class AIService {
     fileId: string;
     description: string;
   }) {
-    const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
-      documentUrl,
-      context: caseId,
-    });
-
-    const textData: string[] = response.data.texts;
-
-    const txtBuffer = Buffer.from(textData.join('\n'), 'utf-8');
-
-    const txtFileName = `processed_text_${uuidv4()}.txt`;
-
-    const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
-
-    await this.processedFileService.create({
+    const processedFile = await this.processedFileService.create({
       fileId,
       description: `${description}-transcript`,
-      url: txtFileResult.Key,
+      type: 'TRANSCRIPT',
+      status: 'LOADING',
     });
+
+    try {
+      const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
+        documentUrl,
+        context: caseId,
+      });
+
+      const textData: string[] = response.data.texts;
+
+      const txtBuffer = Buffer.from(textData.join('\n'), 'utf-8');
+
+      const txtFileName = `processed_text_${uuidv4()}.txt`;
+
+      const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
+
+      await this.processedFileService.update(processedFile.id, {
+        url: txtFileResult.Key,
+        status: 'SUCCESS',
+      });
+    } catch (err) {
+      await this.processedFileService.update(processedFile.id, {
+        status: 'ERROR',
+      });
+    }
   }
 
-  async generateSummary(generateSummaryDto: GenerateSummaryDto) {
-    const { fileId } = generateSummaryDto;
+  async generateReport(generateReportDto: GenerateReportDto) {
+    const { fileId } = generateReportDto;
 
-    const processedFiles = await this.processedFileService.findAll({ fileId });
-
-    if (!processedFiles || processedFiles.length === 0) {
-      throw new Error('Processed file not found');
-    }
-
-    const fileContentBuffer = await this.s3.getFileContent(processedFiles[0].url);
-    const fileContent = fileContentBuffer.toString('utf-8');
-
-    const response = await axios.post(`${process.env.AI_API_URL}/generate-summary`, {
-      content: fileContent,
+    const foundFile = await this.prisma.file.findUnique({
+      where: { id: fileId },
+      include: { processedFiles: true },
     });
 
-    return response.data.summary;
+    if (!foundFile) throw new NotFoundException(`File with id '${fileId}' not found`);
+
+    const transcript = foundFile.processedFiles.find(({ type }) => type === 'TRANSCRIPT');
+
+    if (!transcript) {
+      throw new NotFoundException(`Transcript for file with id '${fileId}' not found`);
+    }
+
+    const processedFile = await this.processedFileService.create({
+      fileId,
+      description: `${foundFile.description}-transcript`,
+      type: 'REPORT',
+      status: 'LOADING',
+    });
+
+    (async () => {
+      try {
+        const fileContentBuffer = await this.s3.getFileContent(transcript.url);
+        const fileContent = fileContentBuffer.toString('utf-8');
+
+        const response = await axios.post(`${process.env.AI_API_URL}/generate-summary`, {
+          content: fileContent,
+        });
+
+        const pdfBuffer = Buffer.from(response.data);
+        const pdfFileName = `summary_${uuidv4()}.pdf`;
+        const pdfFileResult = await this.s3.uploadBuffer(pdfBuffer, pdfFileName, 'application/pdf');
+
+        await this.processedFileService.update(processedFile.id, {
+          url: pdfFileResult.Key,
+          status: 'SUCCESS',
+        });
+      } catch (err) {
+        await this.processedFileService.update(processedFile.id, {
+          status: 'ERROR',
+        });
+      }
+    })();
   }
 }

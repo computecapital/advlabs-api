@@ -1,8 +1,25 @@
-import { IsDate, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsDate, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+
+export enum ProcessedFileTypeENUM {
+  TRANSCRIPT = 'TRANSCRIPT',
+  REPORT = 'REPORT',
+}
+
+export type ProcessedFileTypeUnion = `${ProcessedFileTypeENUM}`;
+
+export enum ProcessedFileStatusENUM {
+  LOADING = 'LOADING',
+  ERROR = 'ERROR',
+  SUCCESS = 'SUCCESS',
+}
+
+export type ProcessedFileStatusUnion = `${ProcessedFileStatusENUM}`;
 
 type ProcessedFileProps = {
   id: string;
-  url: string;
+  url?: string;
+  type: ProcessedFileTypeUnion;
+  status: ProcessedFileStatusUnion;
   description: string;
   fileId: string;
   createdAt: Date;
@@ -14,8 +31,14 @@ export class ProcessedFile {
   id: string;
 
   @IsString()
-  @IsNotEmpty()
-  url: string;
+  @IsOptional()
+  url?: string;
+
+  @IsEnum(ProcessedFileTypeENUM)
+  type: ProcessedFileTypeUnion;
+
+  @IsEnum(ProcessedFileStatusENUM)
+  status: ProcessedFileStatusUnion;
 
   @IsString()
   description: string;
@@ -32,6 +55,8 @@ export class ProcessedFile {
   constructor(props: ProcessedFileProps) {
     this.id = props.id;
     this.url = props.url;
+    this.type = props.type;
+    this.status = props.status;
     this.description = props.description;
     this.fileId = props.fileId;
     this.createdAt = props.createdAt;
@@ -42,6 +67,8 @@ export class ProcessedFile {
     return {
       id: this.id,
       url: this.url,
+      type: this.type,
+      status: this.status,
       description: this.description,
       fileId: this.fileId,
       createdAt: this.createdAt,

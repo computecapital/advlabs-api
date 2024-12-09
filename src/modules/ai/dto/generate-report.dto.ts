@@ -1,6 +1,6 @@
 import { IsUUID } from 'class-validator';
 
-export class GenerateSummaryDto {
+export class GenerateReportDto {
   @IsUUID()
   fileId: string;
 }

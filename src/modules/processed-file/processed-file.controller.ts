@@ -25,6 +25,13 @@ export class ProcessedFileController {
     return processedFiles.map((processedFile) => processedFile.toJSON());
   }
 
+  @Get('download/:id')
+  async download(@Param('id') id: string) {
+    const fileUrl = await this.processedFileService.getDownloadURL(id);
+
+    return fileUrl;
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const processedFile = await this.processedFileService.findOne(id);
