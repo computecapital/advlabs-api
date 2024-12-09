@@ -131,8 +131,8 @@ export class AIService {
         const fileContentBuffer = await this.s3.getFileContent(transcript.url);
         const fileContent = fileContentBuffer.toString('utf-8');
 
-        const response = await axios.post(`${process.env.AI_API_URL}/generate-summary`, {
-          content: fileContent,
+        const response = await axios.post(`${process.env.AI_API_URL}/generate-report`, {
+          texts: fileContent,
         });
 
         const pdfBuffer = Buffer.from(response.data);
