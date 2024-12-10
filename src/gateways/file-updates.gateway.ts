@@ -8,9 +8,8 @@ import { Server } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173', // React app's URL
+    origin: ['http://localhost:5173', 'http://206.42.19.112:3003'],
     methods: ['GET', 'POST'],
-    credentials: true, // Optional if you need cookies/auth headers
   },
 })
 export class FileUpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect {
