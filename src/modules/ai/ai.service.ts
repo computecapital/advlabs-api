@@ -121,7 +121,7 @@ export class AIService {
 
     const processedFile = await this.processedFileService.create({
       fileId,
-      description: `${foundFile.description}-transcript`,
+      description: `${foundFile.description}-report`,
       type: 'REPORT',
       status: 'LOADING',
     });
@@ -142,9 +142,15 @@ export class AIService {
             .trim(),
         );
 
-        const response = await axios.post(`${process.env.AI_API_URL}/generate-report`, {
-          texts: cleandPageContents,
-        });
+        const response = await axios.post(
+          `${process.env.AI_API_URL}/generate-report`,
+          {
+            texts: cleandPageContents,
+          },
+          {
+            responseType: 'arraybuffer',
+          },
+        );
 
         const pdfBuffer = Buffer.from(response.data);
         const pdfFileName = `summary_${uuidv4()}.pdf`;
