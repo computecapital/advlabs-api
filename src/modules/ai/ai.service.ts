@@ -98,12 +98,22 @@ export class AIService {
         url: txtFileResult.Key,
         status: 'SUCCESS',
       });
+
+      this.fileUpdatesGateway.announceUpdateFiles({
+        processedFileId: processedFile.id,
+        type: 'TRANSCRIPT',
+        status: 'SUCCESS',
+      });
     } catch (err) {
       await this.processedFileService.update(processedFile.id, {
         status: 'ERROR',
       });
-    } finally {
-      this.fileUpdatesGateway.announceUpdateFiles();
+
+      this.fileUpdatesGateway.announceUpdateFiles({
+        processedFileId: processedFile.id,
+        type: 'TRANSCRIPT',
+        status: 'ERROR',
+      });
     }
   }
 
@@ -165,12 +175,21 @@ export class AIService {
           status: 'SUCCESS',
         });
 
-        this.fileUpdatesGateway.announceUpdateFiles({ processedFileId: processedFile.id });
+        this.fileUpdatesGateway.announceUpdateFiles({
+          processedFileId: processedFile.id,
+          type: 'REPORT',
+          status: 'SUCCESS',
+        });
       } catch (err) {
         await this.processedFileService.update(processedFile.id, {
           status: 'ERROR',
         });
-        this.fileUpdatesGateway.announceUpdateFiles();
+
+        this.fileUpdatesGateway.announceUpdateFiles({
+          processedFileId: processedFile.id,
+          type: 'REPORT',
+          status: 'ERROR',
+        });
       }
     })();
   }
