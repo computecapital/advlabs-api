@@ -6,7 +6,13 @@ import {
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 
-@WebSocketGateway()
+@WebSocketGateway({
+  cors: {
+    origin: 'http://localhost:5173', // React app's URL
+    methods: ['GET', 'POST'],
+    credentials: true, // Optional if you need cookies/auth headers
+  },
+})
 export class FileUpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
