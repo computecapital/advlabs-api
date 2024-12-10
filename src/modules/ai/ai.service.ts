@@ -8,6 +8,7 @@ import { FileService } from '../file/file.service';
 import { ProcessedFileService } from '../processed-file/processed-file.service';
 import { GenerateReportDto } from './dto/generate-report.dto';
 import { File } from '../file/entities/file.entity';
+import { FileUpdatesGateway } from 'src/gateways/file-updates.gateway';
 
 @Injectable()
 export class AIService {
@@ -15,6 +16,7 @@ export class AIService {
     private readonly s3: S3Service,
     private readonly fileService: FileService,
     private readonly processedFileService: ProcessedFileService,
+    private readonly fileUpdatesGateway: FileUpdatesGateway,
     // TODO: Create modules and use their services instead
     private readonly prisma: PrismaService,
   ) {}
@@ -100,6 +102,8 @@ export class AIService {
       await this.processedFileService.update(processedFile.id, {
         status: 'ERROR',
       });
+    } finally {
+      this.fileUpdatesGateway.announceUpdateFiles();
     }
   }
 
@@ -164,6 +168,8 @@ export class AIService {
         await this.processedFileService.update(processedFile.id, {
           status: 'ERROR',
         });
+      } finally {
+        this.fileUpdatesGateway.announceUpdateFiles();
       }
     })();
   }
