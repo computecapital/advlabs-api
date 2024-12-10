@@ -103,7 +103,7 @@ export class AIService {
         status: 'ERROR',
       });
     } finally {
-      this.fileUpdatesGateway.announceUpdateFiles({ processedFileId: processedFile.id });
+      this.fileUpdatesGateway.announceUpdateFiles();
     }
   }
 
@@ -164,12 +164,13 @@ export class AIService {
           url: pdfFileResult.Key,
           status: 'SUCCESS',
         });
+
+        this.fileUpdatesGateway.announceUpdateFiles({ processedFileId: processedFile.id });
       } catch (err) {
         await this.processedFileService.update(processedFile.id, {
           status: 'ERROR',
         });
-      } finally {
-        this.fileUpdatesGateway.announceUpdateFiles({ processedFileId: processedFile.id });
+        this.fileUpdatesGateway.announceUpdateFiles();
       }
     })();
   }
