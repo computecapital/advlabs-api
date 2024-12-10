@@ -29,8 +29,8 @@ export class FileUpdatesGateway implements OnGatewayConnection, OnGatewayDisconn
     this.connectedClients.delete(client.id);
   }
 
-  announceUpdateFiles() {
+  announceUpdateFiles(data?: Record<string, string>) {
     console.log('Announcing update files to all clients.');
-    this.server.emit('update-files', { message: 'Files have been updated.' });
+    this.server.emit('update-files', { message: 'Files have been updated.', ...data });
   }
 }

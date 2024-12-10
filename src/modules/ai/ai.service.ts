@@ -103,7 +103,7 @@ export class AIService {
         status: 'ERROR',
       });
     } finally {
-      this.fileUpdatesGateway.announceUpdateFiles();
+      this.fileUpdatesGateway.announceUpdateFiles({ processedFileId: processedFile.id });
     }
   }
 
@@ -169,7 +169,7 @@ export class AIService {
           status: 'ERROR',
         });
       } finally {
-        this.fileUpdatesGateway.announceUpdateFiles();
+        this.fileUpdatesGateway.announceUpdateFiles({ processedFileId: processedFile.id });
       }
     })();
   }
