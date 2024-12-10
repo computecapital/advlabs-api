@@ -20,6 +20,8 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
-  await app.listen(3000);
+  const port = process.env.NEST_PORT || 3000;
+
+  await app.listen(port);
 }
 bootstrap();

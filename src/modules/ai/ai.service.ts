@@ -131,8 +131,19 @@ export class AIService {
         const fileContentBuffer = await this.s3.getFileContent(transcript.url);
         const fileContent = fileContentBuffer.toString('utf-8');
 
+        const pageContents = fileContent
+          .split(/\nPage \d+:\s*/)
+          .filter((content) => content.trim() !== '');
+
+        const cleandPageContents = pageContents.map((content) =>
+          content
+            .trim()
+            .replace(/^[`"]+|[`"]+$/g, '')
+            .trim(),
+        );
+
         const response = await axios.post(`${process.env.AI_API_URL}/generate-report`, {
-          texts: fileContent,
+          texts: cleandPageContents,
         });
 
         const pdfBuffer = Buffer.from(response.data);
