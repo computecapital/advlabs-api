@@ -181,6 +181,7 @@ export class AIService {
           status: 'SUCCESS',
         });
       } catch (err) {
+        console.log(err);
         await this.processedFileService.update(processedFile.id, {
           status: 'ERROR',
         });
