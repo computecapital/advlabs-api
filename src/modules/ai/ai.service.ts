@@ -157,7 +157,7 @@ export class AIService {
         );
 
         const response = await axios.post(
-          `${process.env.AI_API_URL}/generate-report`,
+          `${process.env.AI_API_URL}/generate-adv-report`,
           {
             texts: cleandPageContents,
           },
