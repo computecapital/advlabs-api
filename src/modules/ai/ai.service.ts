@@ -88,7 +88,7 @@ export class AIService {
 
       const textData: string[] = response.data.texts;
 
-      const txtBuffer = Buffer.from(textData.join('\n'), 'utf-8');
+      const txtBuffer = Buffer.from(textData.join('\n!!!===PAGE_SEPARATOR===!!!\n'), 'utf-8');
 
       const txtFileName = `processed_text_${uuidv4()}.txt`;
 
@@ -145,21 +145,12 @@ export class AIService {
         const fileContentBuffer = await this.s3.getFileContent(transcript.url);
         const fileContent = fileContentBuffer.toString('utf-8');
 
-        const pageContents = fileContent
-          .split(/\nPage \d+:\s*/)
-          .filter((content) => content.trim() !== '');
-
-        const cleandPageContents = pageContents.map((content) =>
-          content
-            .trim()
-            .replace(/^[`"]+|[`"]+$/g, '')
-            .trim(),
-        );
+        const pageContents = fileContent.split('\n!!!===PAGE_SEPARATOR===!!!\n');
 
         const response = await axios.post(
           `${process.env.AI_API_URL}/generate-adv-report`,
           {
-            texts: cleandPageContents,
+            texts: pageContents,
           },
           {
             responseType: 'arraybuffer',
