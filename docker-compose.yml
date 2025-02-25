@@ -44,18 +44,18 @@ services:
       timeout: 5s
       retries: 5
 
-  prisma-studio:
-    container_name: prisma-studio
-    network_mode: host
-    image: timothyjmiller/prisma-studio:latest
-    restart: unless-stopped
-    env_file:
-     - .env
-    ports:
-      - ${PRISMA_STUDIO_PORT}:5555
-    profiles: [prod]
-    depends_on:
-      - prod-api
+  # prisma-studio:
+  #   container_name: prisma-studio
+  #   network_mode: host
+  #   image: timothyjmiller/prisma-studio:latest
+  #   restart: unless-stopped
+  #   env_file:
+  #    - .env
+  #   ports:
+  #     - ${PRISMA_STUDIO_PORT}:5555
+  #   profiles: [prod]
+  #   depends_on:
+  #     - prod-api
 
 volumes:
   data: {}
