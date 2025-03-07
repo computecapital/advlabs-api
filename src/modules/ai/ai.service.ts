@@ -132,7 +132,9 @@ export class AIService {
       throw new NotFoundException(`File with id '${fileId}' not found`);
     }
 
-    const transcript = foundFile.processedFiles.find(({ type }) => type === 'TRANSCRIPT');
+    const transcript = foundFile.processedFiles.find(
+      ({ type, status }) => type === 'TRANSCRIPT' && status === 'SUCCESS',
+    );
 
     if (!transcript) {
       throw new NotFoundException(`Transcript for file with id '${fileId}' not found`);
