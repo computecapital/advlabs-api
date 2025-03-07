@@ -9,8 +9,9 @@ services:
       dockerfile: ./build/dev.dockerfile
     depends_on:
       - db
+      - redis
     volumes:
-    - .:/usr/src/app
+      - .:/usr/src/app
     profiles: [dev]
 
   prod-api:
@@ -24,6 +25,7 @@ services:
       dockerfile: ./build/prod.dockerfile
     depends_on:
       - db
+      - redis
     profiles: [prod]
 
   db:
@@ -31,8 +33,6 @@ services:
     image: postgres
     ports:
       - '${POSTGRES_PORT}:${DB_PORT}'
-    # volumes:
-    #   - data:/data/db
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
@@ -44,18 +44,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # prisma-studio:
-  #   container_name: prisma-studio
-  #   network_mode: host
-  #   image: timothyjmiller/prisma-studio:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #    - .env
-  #   ports:
-  #     - ${PRISMA_STUDIO_PORT}:5555
-  #   profiles: [prod]
-  #   depends_on:
-  #     - prod-api
+  redis:
+    container_name: advlabs-redis
+    image: redis:6-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    restart: always
 
 volumes:
   data: {}
+  redis_data: {}
