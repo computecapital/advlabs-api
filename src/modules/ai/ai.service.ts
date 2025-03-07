@@ -20,13 +20,16 @@ export class AIService {
     // TODO: Create modules and use their services instead
     private readonly prisma: PrismaService,
   ) {
-    console.log('AIService instantiated');
-    this.reportsQueue.on('error', (error) => {
-      console.error('Bull Queue Error:', error);
+    this.reportsQueue.on('active', (job) => {
+      console.log(`Job ${job.id} is now active`);
     });
 
-    this.reportsQueue.on('ready', () => {
-      console.log('Bull Queue is ready and connected to Redis.');
+    this.reportsQueue.on('completed', (job, result) => {
+      console.log(`Job ${job.id} completed with result:`, result);
+    });
+
+    this.reportsQueue.on('failed', (job, err) => {
+      console.error(`Job ${job.id} failed with error:`, err);
     });
   }
 
