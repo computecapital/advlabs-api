@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 import { S3Service } from 'src/services/s3.service';
 import { PrismaService } from 'src/services';
@@ -8,7 +9,6 @@ import { FileService } from '../file/file.service';
 import { ProcessedFileService } from '../processed-file/processed-file.service';
 import { GenerateReportDto } from './dto/generate-report.dto';
 import { File } from '../file/entities/file.entity';
-import { FileUpdatesGateway } from 'src/gateways/file-updates.gateway';
 
 @Injectable()
 export class AIService {
@@ -16,10 +16,19 @@ export class AIService {
     private readonly s3: S3Service,
     private readonly fileService: FileService,
     private readonly processedFileService: ProcessedFileService,
-    private readonly fileUpdatesGateway: FileUpdatesGateway,
+    @InjectQueue('reports') private readonly reportsQueue: Queue,
     // TODO: Create modules and use their services instead
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    console.log('AIService instantiated');
+    this.reportsQueue.on('error', (error) => {
+      console.error('Bull Queue Error:', error);
+    });
+
+    this.reportsQueue.on('ready', () => {
+      console.log('Bull Queue is ready and connected to Redis.');
+    });
+  }
 
   async uploadDocument(file: Express.Multer.File, description: string): Promise<File> {
     try {
@@ -80,41 +89,17 @@ export class AIService {
       status: 'LOADING',
     });
 
-    try {
-      const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
+    await this.reportsQueue.add(
+      'readDocument',
+      {
         documentUrl,
-        context: caseId,
-      });
-
-      const textData: string[] = response.data.texts;
-
-      const txtBuffer = Buffer.from(textData.join('\n!!!===PAGE_SEPARATOR===!!!\n'), 'utf-8');
-
-      const txtFileName = `processed_text_${uuidv4()}.txt`;
-
-      const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
-
-      await this.processedFileService.update(processedFile.id, {
-        url: txtFileResult.Key,
-        status: 'SUCCESS',
-      });
-
-      this.fileUpdatesGateway.announceUpdateFiles({
+        caseId,
         processedFileId: processedFile.id,
-        type: 'TRANSCRIPT',
-        status: 'SUCCESS',
-      });
-    } catch (err) {
-      await this.processedFileService.update(processedFile.id, {
-        status: 'ERROR',
-      });
-
-      this.fileUpdatesGateway.announceUpdateFiles({
-        processedFileId: processedFile.id,
-        type: 'TRANSCRIPT',
-        status: 'ERROR',
-      });
-    }
+      },
+      {
+        jobId: fileId,
+      },
+    );
   }
 
   async generateReport(generateReportDto: GenerateReportDto) {
@@ -125,7 +110,9 @@ export class AIService {
       include: { processedFiles: true },
     });
 
-    if (!foundFile) throw new NotFoundException(`File with id '${fileId}' not found`);
+    if (!foundFile) {
+      throw new NotFoundException(`File with id '${fileId}' not found`);
+    }
 
     const transcript = foundFile.processedFiles.find(
       ({ type, status }) => type === 'TRANSCRIPT' && status === 'SUCCESS',
@@ -142,49 +129,17 @@ export class AIService {
       status: 'LOADING',
     });
 
-    (async () => {
-      try {
-        const fileContentBuffer = await this.s3.getFileContent(transcript.url);
-        const fileContent = fileContentBuffer.toString('utf-8');
+    await this.reportsQueue.add(
+      'generateReport',
+      {
+        transcriptUrl: transcript.url,
+        processedFileId: processedFile.id,
+      },
+      {
+        jobId: fileId,
+      },
+    );
 
-        const pageContents = fileContent.split('\n!!!===PAGE_SEPARATOR===!!!\n');
-
-        const response = await axios.post(
-          `${process.env.AI_API_URL}/generate-adv-report`,
-          {
-            texts: pageContents,
-          },
-          {
-            responseType: 'arraybuffer',
-          },
-        );
-
-        const pdfBuffer = Buffer.from(response.data);
-        const pdfFileName = `summary_${uuidv4()}.pdf`;
-        const pdfFileResult = await this.s3.uploadBuffer(pdfBuffer, pdfFileName, 'application/pdf');
-
-        await this.processedFileService.update(processedFile.id, {
-          url: pdfFileResult.Key,
-          status: 'SUCCESS',
-        });
-
-        this.fileUpdatesGateway.announceUpdateFiles({
-          processedFileId: processedFile.id,
-          type: 'REPORT',
-          status: 'SUCCESS',
-        });
-      } catch (err) {
-        console.log(err);
-        await this.processedFileService.update(processedFile.id, {
-          status: 'ERROR',
-        });
-
-        this.fileUpdatesGateway.announceUpdateFiles({
-          processedFileId: processedFile.id,
-          type: 'REPORT',
-          status: 'ERROR',
-        });
-      }
-    })();
+    console.log('Job enqueued');
   }
 }

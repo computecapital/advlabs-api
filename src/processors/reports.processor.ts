@@ -17,15 +17,13 @@ export class ReportsProcessor {
     console.log('ReportsProcessor instantiated');
   }
 
-  @Process()
-  async handleReport(job: Job) {
-    const { transcriptUrl, processedFileId } = job.data;
-    console.log('handle report', transcriptUrl);
-
+  @Process('generateReport')
+  async handleGenerateReport(job: Job) {
+    console.log('handleGenerateReport called with job data:', job.data);
     try {
+      const { transcriptUrl, processedFileId } = job.data;
       const fileContentBuffer = await this.s3.getFileContent(transcriptUrl);
       const fileContent = fileContentBuffer.toString('utf-8');
-
       const pageContents = fileContent.split('\n!!!===PAGE_SEPARATOR===!!!\n');
 
       const response = await axios.post(
@@ -49,12 +47,51 @@ export class ReportsProcessor {
         status: 'SUCCESS',
       });
     } catch (err) {
-      console.error(err);
+      console.error('Error in generateReport job:', err);
+      await this.processedFileService.update(job.data.processedFileId, { status: 'ERROR' });
+      this.fileUpdatesGateway.announceUpdateFiles({
+        processedFileId: job.data.processedFileId,
+        type: 'REPORT',
+        status: 'ERROR',
+      });
+    }
+  }
 
-      await this.processedFileService.update(processedFileId, { status: 'ERROR' });
+  @Process('readDocument')
+  async handleReadDocument(job: Job) {
+    console.log('handleReadDocument called with job data:', job.data);
+    try {
+      const { documentUrl, caseId, processedFileId } = job.data;
+
+      const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
+        documentUrl,
+        context: caseId,
+      });
+
+      const textData: string[] = response.data.texts;
+      const txtBuffer = Buffer.from(textData.join('\n!!!===PAGE_SEPARATOR===!!!\n'), 'utf-8');
+      const txtFileName = `processed_text_${uuidv4()}.txt`;
+      const txtFileResult = await this.s3.uploadBuffer(txtBuffer, txtFileName, 'text/plain');
+
+      await this.processedFileService.update(processedFileId, {
+        url: txtFileResult.Key,
+        status: 'SUCCESS',
+      });
+
       this.fileUpdatesGateway.announceUpdateFiles({
         processedFileId,
-        type: 'REPORT',
+        type: 'TRANSCRIPT',
+        status: 'SUCCESS',
+      });
+    } catch (err) {
+      console.error('Error in readDocument job:', err);
+      await this.processedFileService.update(job.data.processedFileId, {
+        status: 'ERROR',
+      });
+
+      this.fileUpdatesGateway.announceUpdateFiles({
+        processedFileId: job.data.processedFileId,
+        type: 'TRANSCRIPT',
         status: 'ERROR',
       });
     }
