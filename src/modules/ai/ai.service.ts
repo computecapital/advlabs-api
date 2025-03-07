@@ -22,7 +22,15 @@ export class AIService {
     @InjectQueue('reports') private readonly reportsQueue: Queue,
     // TODO: Create modules and use their services instead
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    this.reportsQueue.on('error', (error) => {
+      console.error('Bull Queue Error:', error);
+    });
+
+    this.reportsQueue.on('ready', () => {
+      console.log('Bull Queue is ready and connected to Redis.');
+    });
+  }
 
   async uploadDocument(file: Express.Multer.File, description: string): Promise<File> {
     try {
