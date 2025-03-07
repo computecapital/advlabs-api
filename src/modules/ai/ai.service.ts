@@ -158,5 +158,7 @@ export class AIService {
         jobId: fileId,
       },
     );
+
+    console.log('Job enqueued');
   }
 }
