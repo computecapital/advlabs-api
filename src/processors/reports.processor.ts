@@ -18,6 +18,7 @@ export class ReportsProcessor {
   @Process()
   async handleReport(job: Job) {
     const { transcriptUrl, processedFileId } = job.data;
+    console.log('handle report', transcriptUrl);
 
     try {
       const fileContentBuffer = await this.s3.getFileContent(transcriptUrl);
