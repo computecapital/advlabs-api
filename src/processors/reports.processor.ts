@@ -13,7 +13,9 @@ export class ReportsProcessor {
     private readonly s3: S3Service,
     private readonly processedFileService: ProcessedFileService,
     private readonly fileUpdatesGateway: FileUpdatesGateway,
-  ) {}
+  ) {
+    console.log('ReportsProcessor instantiated');
+  }
 
   @Process()
   async handleReport(job: Job) {

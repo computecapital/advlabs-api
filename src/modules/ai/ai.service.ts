@@ -23,6 +23,7 @@ export class AIService {
     // TODO: Create modules and use their services instead
     private readonly prisma: PrismaService,
   ) {
+    console.log('AIService instantiated');
     this.reportsQueue.on('error', (error) => {
       console.error('Bull Queue Error:', error);
     });
