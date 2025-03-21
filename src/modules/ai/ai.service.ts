@@ -9,6 +9,7 @@ import { FileService } from '../file/file.service';
 import { ProcessedFileService } from '../processed-file/processed-file.service';
 import { GenerateReportDto } from './dto/generate-report.dto';
 import { File } from '../file/entities/file.entity';
+import { v4 } from 'uuid';
 
 @Injectable()
 export class AIService {
@@ -100,7 +101,7 @@ export class AIService {
         processedFileId: processedFile.id,
       },
       {
-        jobId: fileId,
+        jobId: `${fileId}-read-${v4()}`,
       },
     );
   }
@@ -139,7 +140,7 @@ export class AIService {
         processedFileId: processedFile.id,
       },
       {
-        jobId: fileId,
+        jobId: `${fileId}-report-${v4()}`,
       },
     );
 
