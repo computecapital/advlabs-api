@@ -4,6 +4,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { AIService } from './ai.service';
 import { GenerateReportDto } from './dto/generate-report.dto';
+import { RetryReadDocumentDto } from './dto/retry-read-document.dto';
 
 @ApiTags('ai')
 @ApiBearerAuth()
@@ -33,6 +34,11 @@ export class AIController {
     @Body('description') description: string,
   ) {
     await this.aiService.uploadDocument(file, description);
+  }
+
+  @Post('/retry-read-document')
+  async retryReadDocument(@Body() retryReadDocumentDto: RetryReadDocumentDto) {
+    return this.aiService.retryReadDocument(retryReadDocumentDto);
   }
 
   @Post('/generate-report')

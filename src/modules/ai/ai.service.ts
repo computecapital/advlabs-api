@@ -10,6 +10,7 @@ import { ProcessedFileService } from '../processed-file/processed-file.service';
 import { GenerateReportDto } from './dto/generate-report.dto';
 import { File } from '../file/entities/file.entity';
 import { v4 } from 'uuid';
+import { RetryReadDocumentDto } from './dto/retry-read-document.dto';
 
 @Injectable()
 export class AIService {
@@ -104,6 +105,33 @@ export class AIService {
         jobId: `${fileId}-read-${v4()}`,
       },
     );
+  }
+
+  async retryReadDocument({ fileId }: RetryReadDocumentDto) {
+    const foundFile = await this.prisma.file.findUnique({
+      where: { id: fileId },
+      include: { case: true },
+    });
+
+    if (!foundFile) {
+      throw new NotFoundException(`File with id '${fileId}' not found`);
+    }
+
+    const documentUrl = await this.s3.getSignedUrl(foundFile.url);
+
+    if (!foundFile.case) {
+      throw new NotFoundException(`Case for file with id '${fileId}' not found`);
+    }
+
+    const description = foundFile.description;
+    const caseId = foundFile.case.id;
+
+    this.readDocument({
+      documentUrl,
+      caseId,
+      fileId,
+      description,
+    });
   }
 
   async generateReport(generateReportDto: GenerateReportDto) {
