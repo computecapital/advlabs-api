@@ -13,11 +13,8 @@ export class ReportsProcessor {
     private readonly s3: S3Service,
     private readonly processedFileService: ProcessedFileService,
     private readonly fileUpdatesGateway: FileUpdatesGateway,
-  ) {
-    console.log('ReportsProcessor instantiated');
-  }
+  ) {}
 
-  @Process('generateReport')
   async handleGenerateReport(job: Job) {
     console.log('handleGenerateReport called with job data:', job.data);
     try {
@@ -57,7 +54,6 @@ export class ReportsProcessor {
     }
   }
 
-  @Process('readDocument')
   async handleReadDocument(job: Job) {
     console.log('handleReadDocument called with job data:', job.data);
     try {
@@ -94,6 +90,18 @@ export class ReportsProcessor {
         type: 'TRANSCRIPT',
         status: 'ERROR',
       });
+    }
+  }
+
+  @Process({ concurrency: 1 })
+  async mainProcess(job: Job) {
+    switch (job.data.type) {
+      case 'readDocument':
+        await this.handleReadDocument(job);
+        break;
+      case 'generateReport':
+        await this.handleGenerateReport(job);
+        break;
     }
   }
 }

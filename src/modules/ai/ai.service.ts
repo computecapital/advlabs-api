@@ -22,17 +22,18 @@ export class AIService {
     // TODO: Create modules and use their services instead
     private readonly prisma: PrismaService,
   ) {
-    this.reportsQueue.on('active', (job) => {
-      console.log(`Job ${job.id} is now active`);
-    });
-
-    this.reportsQueue.on('completed', (job, result) => {
-      console.log(`Job ${job.id} completed with result:`, result);
-    });
-
-    this.reportsQueue.on('failed', (job, err) => {
-      console.error(`Job ${job.id} failed with error:`, err);
-    });
+    // this.reportsQueue.on('active', (job) => {
+    //   console.log(`Job ${job.id} is now active`);
+    // });
+    // this.reportsQueue.on('completed', (job, result) => {
+    //   console.log(`Job ${job.id} completed with result:`, result);
+    // });
+    // this.reportsQueue.on('failed', (job, err) => {
+    //   console.error(`Job ${job.id} failed with error:`, err);
+    // });
+    // this.reportsQueue.on('error', (error) => {
+    //   console.error('Redis connection error:', error);
+    // });
   }
 
   async uploadDocument(file: Express.Multer.File, description: string): Promise<File> {
@@ -95,8 +96,8 @@ export class AIService {
     });
 
     await this.reportsQueue.add(
-      'readDocument',
       {
+        type: 'readDocument',
         documentUrl,
         caseId,
         processedFileId: processedFile.id,
@@ -162,8 +163,8 @@ export class AIService {
     });
 
     await this.reportsQueue.add(
-      'generateReport',
       {
+        type: 'generateReport',
         transcriptUrl: transcript.url,
         processedFileId: processedFile.id,
       },
@@ -171,7 +172,5 @@ export class AIService {
         jobId: `${fileId}-report-${v4()}`,
       },
     );
-
-    console.log('Job enqueued');
   }
 }
