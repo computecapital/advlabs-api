@@ -60,7 +60,7 @@ export class AIService {
         url: result.Key,
       });
 
-      this.readDocument({
+      await this.readDocument({
         documentUrl,
         caseId: caseObj.id,
         fileId: createdFile.id,
@@ -127,7 +127,7 @@ export class AIService {
     const description = foundFile.description;
     const caseId = foundFile.case.id;
 
-    this.readDocument({
+    await this.readDocument({
       documentUrl,
       caseId,
       fileId,
@@ -152,7 +152,7 @@ export class AIService {
     );
 
     if (!transcript) {
-      throw new NotFoundException(`Transcript for file with id '${fileId}' not found`);
+      await this.retryReadDocument({ fileId });
     }
 
     const processedFile = await this.processedFileService.create({
@@ -165,8 +165,9 @@ export class AIService {
     await this.reportsQueue.add(
       {
         type: 'generateReport',
-        transcriptUrl: transcript.url,
+        transcriptUrl: transcript?.url,
         processedFileId: processedFile.id,
+        fileId,
       },
       {
         jobId: `${fileId}-report-${v4()}`,

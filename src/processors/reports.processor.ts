@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { S3Service } from 'src/services/s3.service';
 import { ProcessedFileService } from 'src/modules/processed-file/processed-file.service';
 import { FileUpdatesGateway } from 'src/gateways/file-updates.gateway';
+import { PrismaService } from 'src/services';
 
 @Processor('reports')
 export class ReportsProcessor {
@@ -13,13 +14,34 @@ export class ReportsProcessor {
     private readonly s3: S3Service,
     private readonly processedFileService: ProcessedFileService,
     private readonly fileUpdatesGateway: FileUpdatesGateway,
+    private readonly prisma: PrismaService,
   ) {}
 
   async handleGenerateReport(job: Job) {
     console.log('handleGenerateReport called with job data:', job.data);
     try {
-      const { transcriptUrl, processedFileId } = job.data;
-      const fileContentBuffer = await this.s3.getFileContent(transcriptUrl);
+      const { transcriptUrl, processedFileId, fileId } = job.data;
+
+      let documentUrl = transcriptUrl;
+
+      if (!documentUrl) {
+        const foundFile = await this.prisma.file.findUnique({
+          where: { id: fileId },
+          include: { processedFiles: true },
+        });
+
+        const transcript = foundFile.processedFiles.find(
+          ({ type, status }) => type === 'TRANSCRIPT' && status === 'SUCCESS',
+        );
+
+        if (!transcript) {
+          throw new Error('Transcript read attempt failed');
+        }
+
+        documentUrl = transcript.url;
+      }
+
+      const fileContentBuffer = await this.s3.getFileContent(documentUrl);
       const fileContent = fileContentBuffer.toString('utf-8');
       const pageContents = fileContent.split('\n!!!===PAGE_SEPARATOR===!!!\n');
 
