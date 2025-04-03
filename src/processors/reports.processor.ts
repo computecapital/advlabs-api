@@ -79,7 +79,9 @@ export class ReportsProcessor {
   async handleReadDocument(job: Job) {
     console.log('handleReadDocument called with job data:', job.data);
     try {
-      const { documentUrl, caseId, processedFileId } = job.data;
+      const { fileKey, caseId, processedFileId } = job.data;
+
+      const documentUrl = await this.s3.getSignedUrl(fileKey);
 
       const response = await axios.post(`${process.env.AI_API_URL}/upload-document`, {
         documentUrl,

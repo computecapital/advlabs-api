@@ -40,8 +40,6 @@ export class AIService {
     try {
       const result = await this.s3.uploadFile(file);
 
-      const documentUrl = await this.s3.getSignedUrl(result.Key);
-
       const client = await this.prisma.client.create({
         data: {
           name: `Client for file ${description}`,
@@ -61,7 +59,7 @@ export class AIService {
       });
 
       await this.readDocument({
-        documentUrl,
+        fileKey: result.Key,
         caseId: caseObj.id,
         fileId: createdFile.id,
         description,
@@ -78,12 +76,12 @@ export class AIService {
   }
 
   async readDocument({
-    documentUrl,
+    fileKey,
     caseId,
     fileId,
     description,
   }: {
-    documentUrl: string;
+    fileKey: string;
     caseId: string;
     fileId: string;
     description: string;
@@ -98,7 +96,7 @@ export class AIService {
     await this.reportsQueue.add(
       {
         type: 'readDocument',
-        documentUrl,
+        fileKey,
         caseId,
         processedFileId: processedFile.id,
       },
@@ -118,8 +116,6 @@ export class AIService {
       throw new NotFoundException(`File with id '${fileId}' not found`);
     }
 
-    const documentUrl = await this.s3.getSignedUrl(foundFile.url);
-
     if (!foundFile.case) {
       throw new NotFoundException(`Case for file with id '${fileId}' not found`);
     }
@@ -128,7 +124,7 @@ export class AIService {
     const caseId = foundFile.case.id;
 
     await this.readDocument({
-      documentUrl,
+      fileKey: foundFile.url,
       caseId,
       fileId,
       description,
